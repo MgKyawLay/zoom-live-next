@@ -90,9 +90,9 @@ const Videocall = (props: { slug: string; JWT: string }) => {
 
   return (
     <div className="flex h-full w-full flex-1 flex-col">
-      {/* <h1 className="text-center text-3xl font-bold mb-4 mt-0">
+      <h1 className="text-center text-3xl font-bold mb-4 mt-0">
         Session: {session}
-      </h1> */}
+      </h1>
       <div
         className="flex w-full flex-1"
         style={inSession ? {} : { display: "none" }}
@@ -124,7 +124,9 @@ const Videocall = (props: { slug: string; JWT: string }) => {
             <Button onClick={leaveSession} title="leave session">
               <PhoneOff />
             </Button>
-  
+            <MessageButton
+            
+            />
           </div>
         </div>
       )}
