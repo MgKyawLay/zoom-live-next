@@ -1,6 +1,7 @@
 import React, { MutableRefObject, useEffect, useState } from "react";
 import { Input } from "./ui/input";
 import ZoomVideo, { VideoClient } from "@zoom/videosdk";
+import MessageItem from "./MessageItem";
 
 interface Props {
   isInSession: boolean;
@@ -45,13 +46,10 @@ const MessageBox: React.FC<Props> = ({ isInSession, client }) => {
       setError("Message cannot be empty");
       return;
     }
-
     const chat = client.current.getChatClient();
-
     try {
       // Send the message to all participants
       await chat.sendToAll(message);
-
       // Get the chat history and update the messages state
       const history = await chat.getHistory();
       const formattedMessages = history.map((msg: any) => ({
@@ -61,9 +59,7 @@ const MessageBox: React.FC<Props> = ({ isInSession, client }) => {
         timestamp: msg.timestamp,
         id: msg.id,
       }));
-
       setMessages(formattedMessages); // Set formatted message data
-
       // Clear the input field
       setMessage("");
       setError(null); // Clear any existing errors
@@ -80,13 +76,18 @@ const MessageBox: React.FC<Props> = ({ isInSession, client }) => {
         {isInSession ? (
           messages.length > 0 ? (
             messages.map((msg) => (
-              <div key={msg.id} className="mb-2">
-                <p>
-                  <strong>{msg.sender}</strong> to <strong>{msg.receiver}</strong>
-                </p>
-                <p>{msg.message}</p>
-                <p className="text-xs text-gray-500">{msg.timestamp}</p>
-              </div>
+              <MessageItem 
+              sender={msg.sender}
+              timestamp={msg.timestamp}
+              body={msg.message}
+              />
+              // <div key={msg.id} className="mb-2">
+              //   <p>
+              //     <strong>{msg.sender}</strong> to <strong>{msg.receiver}</strong>
+              //   </p>
+              //   <p>{msg.message}</p>
+              //   <p className="text-xs text-gray-500">{msg.timestamp}</p>
+              // </div>
             ))
           ) : (
             <p>No messages yet</p>

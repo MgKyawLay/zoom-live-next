@@ -37,7 +37,7 @@ const Videocall = (props: { slug: string; JWT: string }) => {
     const mediaStream = client.current.getMediaStream();
     await mediaStream.startAudio();
     setIsAudioMuted(mediaStream.isAudioMuted());
-    await mediaStream.startVideo();
+    // await mediaStream.startVideo();
     setIsVideoMuted(!mediaStream.isCapturingVideo());
     await renderVideo({
       action: "Start",
