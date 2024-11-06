@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import ZoomVideo, {
   type VideoClient,
   VideoQuality,
@@ -16,6 +16,7 @@ const Videocall = (props: { slug: string; JWT: string }) => {
   const jwt = props.JWT;
   const [inSession, setInSession] = useState(false);
   const client = useRef<typeof VideoClient>(ZoomVideo.createClient());
+  const [screenShare, setScreenShare] = useState<boolean>(false);
   const [isVideoMuted, setIsVideoMuted] = useState(
     !client.current.getCurrentUserInfo()?.bVideoOn
   );
@@ -23,6 +24,24 @@ const Videocall = (props: { slug: string; JWT: string }) => {
     client.current.getCurrentUserInfo()?.muted ?? true
   );
   const videoContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    client.current.on("passively-stop-share", (payload) => {
+      const stream = client.current.getMediaStream();
+      stream.stopShareScreen().then(() => {
+        setScreenShare(false);
+      });
+    });
+
+    return () => {
+      client.current.off("passively-stop-share", (payload) => {
+        const stream = client.current.getMediaStream();
+        stream.stopShareScreen().then(() => {
+          setScreenShare(false);
+        });
+      });
+    };
+  }, [client]);
 
   const joinSession = async () => {
     await client.current.init("en-US", "Global", { patchJsMedia: true });
@@ -46,21 +65,26 @@ const Videocall = (props: { slug: string; JWT: string }) => {
   };
 
   const handleShare = async () => {
-    // const stream = client.current.getMediaStream();
-    // console.log("🚀 ~ handleShare ~ stream:", stream);
-    // if (stream.isStartShareScreenWithVideoElement()) {
-    //   //@ts-ignore
-    //   await stream.startShareScreen(
-    //     document.querySelector("#my-screen-share-content-video")
-    //   );
-    //   // screen share successfully started and rendered
-    // } else {
-    //   //@ts-ignore
-    //   await stream.startShareScreen(
-    //     document.querySelector("#my-screen-share-content-canvas")
-    //   );
-    //   // screen share successfully started and rendered
-    // }
+    const stream = client.current.getMediaStream();
+    const shareScreen = document.getElementById("screenShareContainer");
+    if (!screenShare) {
+      try {
+        if (stream.isStartShareScreenWithVideoElement()) {
+          // Start screen share with the video element
+          //@ts-ignore
+          await stream.startShareScreen(shareScreen);
+          setScreenShare(true);
+        } else {
+          console.error("Screen sharing with video element is not supported.");
+        }
+      } catch (error) {
+        console.error("Error starting screen share:", error);
+        setScreenShare(false);
+      }
+    } else {
+      await stream.stopShareScreen();
+      setScreenShare(false);
+    }
   };
 
   const renderVideo = async (event: {
@@ -105,7 +129,14 @@ const Videocall = (props: { slug: string; JWT: string }) => {
           style={inSession ? {} : { display: "none" }}
         >
           {/* @ts-expect-error html component */}
-          <video-player-container ref={videoContainerRef} style={videoPlayerStyle} />
+          <video-player-container ref={videoContainerRef} style={!screenShare ? videoPlayerStyle : videoPlayerStyleWithShare} />
+          <video
+            id="screenShareContainer"
+            style={{
+              ...screenSharePlayerContainer,
+              display: screenShare ? "block" : "none",
+            }}
+          />
         </div>
         {!inSession ? (
           <div className="mx-auto flex w-64 flex-col self-center">
@@ -134,7 +165,7 @@ const Videocall = (props: { slug: string; JWT: string }) => {
               />
 
               <Button onClick={handleShare}>
-                <div>share</div>
+                <div>{!screenShare ? "Share" : "Stop Share"}</div>
               </Button>
               <Button onClick={leaveSession} title="leave session">
                 <PhoneOff />
@@ -158,6 +189,29 @@ const videoPlayerStyle = {
   borderRadius: "10px",
   overflow: "hidden",
   backgroundColor: "black",
+} as CSSProperties;
+
+const videoPlayerStyleWithShare = {
+  height: "20vh",
+  width: "20vw",
+  marginTop: "1.5rem",
+  marginLeft: "3rem",
+  // marginRight: "3rem",
+  alignContent: "center",
+  borderRadius: "10px",
+  overflow: "hidden",
+  backgroundColor: "black",
+} as CSSProperties;
+
+const screenSharePlayerContainer = {
+  height: "75vh",
+  marginTop: "1.5rem",
+  marginLeft: "3rem",
+  marginRight: "3rem",
+  alignContent: "center",
+  borderRadius: "10px",
+  overflow: "hidden",
+  backgroundColor: "skyblue",
 } as CSSProperties;
 
 const userName = `User-${new Date().getTime().toString().slice(8)}`;
