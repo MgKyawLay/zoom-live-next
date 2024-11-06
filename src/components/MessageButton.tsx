@@ -9,7 +9,9 @@ const MessageButton:React.FC<Props> = ({
     client
 }) => {
   return (
-    <div>MessageButton</div>
+    <div>
+        <button>Msg</button>
+    </div>
   )
 }
 

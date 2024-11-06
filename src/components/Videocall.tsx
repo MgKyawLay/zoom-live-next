@@ -6,9 +6,10 @@ import ZoomVideo, {
   VideoQuality,
   type VideoPlayer,
 } from "@zoom/videosdk";
-import { CameraButton, MicButton, ShareButton } from "./MuteButtons";
+import { CameraButton, MicButton } from "./MuteButtons";
 import { PhoneOff } from "lucide-react";
 import { Button } from "./ui/button";
+import MessageBox from "./MessageBox"; 
 
 const Videocall = (props: { slug: string; JWT: string }) => {
   const session = props.slug;
@@ -43,20 +44,23 @@ const Videocall = (props: { slug: string; JWT: string }) => {
       userId: client.current.getCurrentUserInfo().userId,
     });
   };
-  const handleShare = async() => {
+
+  const handleShare = async () => {
     const stream = client.current.getMediaStream();
     if (stream.isStartShareScreenWithVideoElement()) {
+      //@ts-ignore
       await stream.startShareScreen(
         // document.querySelector('#my-screen-share-content-video')
-      )
+      );
       // screen share successfully started and rendered
     } else {
+      //@ts-ignore
       await stream.startShareScreen(
         // document.querySelector('#my-screen-share-content-canvas')
-      )
+      );
       // screen share successfully started and rendered
     }
-  }
+  };
 
   const renderVideo = async (event: {
     action: "Start" | "Stop";
@@ -89,47 +93,50 @@ const Videocall = (props: { slug: string; JWT: string }) => {
   };
 
   return (
-    <div className="flex h-full w-full flex-1 flex-col">
-      <h1 className="text-center text-3xl font-bold mb-4 mt-0">
-        Session: {session}
-      </h1>
-      <div
-        className="flex w-full flex-1"
-        style={inSession ? {} : { display: "none" }}
-      >
-        {/* @ts-expect-error html component */}
-        <video-player-container ref={videoContainerRef} style={videoPlayerStyle} />
-      </div>
-      {!inSession ? (
-        <div className="mx-auto flex w-64 flex-col self-center">
-          <div className="w-4" />
-          <Button className="flex flex-1" onClick={joinSession} title="join session">
-            Join
-          </Button>
+    <div className="flex h-screen w-screen">
+        <MessageBox
+        client={client}
+        isInSession={inSession}
+        />
+      <div className="flex flex-col w-3/4 h-full">
+        <h1 className="text-center text-3xl font-bold mb-4 mt-0">
+          Parabyte Learning Media
+        </h1>
+        <div
+          className="flex w-full flex-1"
+          style={inSession ? {} : { display: "none" }}
+        >
+          {/* @ts-expect-error html component */}
+          <video-player-container ref={videoContainerRef} style={videoPlayerStyle} />
         </div>
-      ) : (
-        <div className="flex w-full flex-col justify-around self-center">
-          <div className="mt-4 flex w-[30rem] flex-1 justify-around self-center rounded-md bg-white p-4">
-            <CameraButton
-              client={client}
-              isVideoMuted={isVideoMuted}
-              setIsVideoMuted={setIsVideoMuted}
-              renderVideo={renderVideo}
-            />
-            <MicButton
-              isAudioMuted={isAudioMuted}
-              client={client}
-              setIsAudioMuted={setIsAudioMuted}
-            />
-            <Button onClick={leaveSession} title="leave session">
-              <PhoneOff />
+        {!inSession ? (
+          <div className="mx-auto flex w-64 flex-col self-center">
+            <div className="w-4" />
+            <Button className="flex flex-1" onClick={joinSession} title="join session">
+              Join
             </Button>
-            <MessageButton
-            
-            />
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex w-full flex-col justify-around self-center">
+            <div className="mt-4 flex w-[30rem] flex-1 justify-around self-center rounded-md bg-white p-4">
+              <CameraButton
+                client={client}
+                isVideoMuted={isVideoMuted}
+                setIsVideoMuted={setIsVideoMuted}
+                renderVideo={renderVideo}
+              />
+              <MicButton
+                isAudioMuted={isAudioMuted}
+                client={client}
+                setIsAudioMuted={setIsAudioMuted}
+              />
+              <Button onClick={leaveSession} title="leave session">
+                <PhoneOff />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -144,7 +151,7 @@ const videoPlayerStyle = {
   alignContent: "center",
   borderRadius: "10px",
   overflow: "hidden",
-  backgroundColor:'black'
+  backgroundColor: "black",
 } as CSSProperties;
 
 const userName = `User-${new Date().getTime().toString().slice(8)}`;
