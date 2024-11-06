@@ -7,48 +7,69 @@ interface Props {
   client: MutableRefObject<typeof VideoClient>;
 }
 
+interface ChatMessage {
+  message: string;
+  sender: string;
+  receiver: string;
+  timestamp: string;
+  id: string;
+}
+
 const MessageBox: React.FC<Props> = ({ isInSession, client }) => {
-  const [messages, setMessages] = useState<string[]>([]);
-  const [message, setMessage] = useState<string>('');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [message, setMessage] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  // Get the chat client from Zoom SDK
-  const chat = client.current?.getChatClient();
 
   useEffect(() => {
-    if (chat) {
-      // Listen for incoming chat messages
-      client.current.on('chat-on-message', (payload) => {
-        console.log(payload);
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          `${payload.sender.name}: ${payload.message}`,
-        ]);
-      });
-    }
+    const handleIncomingMessages = async (payload: any) => {
+      const formattedMessage: ChatMessage = {
+        message: payload?.message,
+        sender: payload?.sender.name,
+        receiver: payload?.receiver.name,
+        id: payload?.id,
+        timestamp: payload?.timestamp,
+      };
+      setMessages((prev) => [...prev, formattedMessage]);
+    };
+
+    client.current.on("chat-on-message", handleIncomingMessages);
 
     return () => {
-      // Cleanup: remove event listener when component unmounts
-    //   if (chat) {
-    //     chat.off('chat-on-message');
-    //   }
+      client.current.off("chat-on-message", handleIncomingMessages);
     };
-  }, [chat]);
+  }, [client]);
 
+  // Handle sending a message
   const handleSendMessage = async () => {
-    if (isInSession && chat) {
-      if (message.trim()) {
-        try {
-          // Send the message to all participants in the session
-          await chat.sendToAll(message);
-          setMessages((prevMessages) => [...prevMessages, `You: ${message}`]); // Update local message state
-          setMessage(''); // Clear the input field
-        } catch (err) {
-          console.error("Error sending message:", err);
-          setError('Failed to send message. Please try again.');
-        }
-      }
-    } else {
-      setError('Chat client is not available or not in session.');
+    if (!message.trim()) {
+      setError("Message cannot be empty");
+      return;
+    }
+
+    const chat = client.current.getChatClient();
+
+    try {
+      // Send the message to all participants
+      await chat.sendToAll(message);
+
+      // Get the chat history and update the messages state
+      const history = await chat.getHistory();
+      const formattedMessages = history.map((msg: any) => ({
+        message: msg.message,
+        sender: msg.sender.name,
+        receiver: msg.receiver.name,
+        timestamp: msg.timestamp,
+        id: msg.id,
+      }));
+
+      setMessages(formattedMessages); // Set formatted message data
+
+      // Clear the input field
+      setMessage("");
+      setError(null); // Clear any existing errors
+    } catch (err) {
+      setError("Failed to send the message. Please try again.");
+      console.error("Error sending message:", err);
     }
   };
 
@@ -58,7 +79,15 @@ const MessageBox: React.FC<Props> = ({ isInSession, client }) => {
       <div className="flex-1 overflow-y-auto p-2">
         {isInSession ? (
           messages.length > 0 ? (
-            messages.map((msg, index) => <p key={index}>{msg}</p>)
+            messages.map((msg) => (
+              <div key={msg.id} className="mb-2">
+                <p>
+                  <strong>{msg.sender}</strong> to <strong>{msg.receiver}</strong>
+                </p>
+                <p>{msg.message}</p>
+                <p className="text-xs text-gray-500">{msg.timestamp}</p>
+              </div>
+            ))
           ) : (
             <p>No messages yet</p>
           )
@@ -66,13 +95,22 @@ const MessageBox: React.FC<Props> = ({ isInSession, client }) => {
           <p>Join the session first</p>
         )}
       </div>
+
+      {/* Display error message */}
       {error && <div className="text-red-500">{error}</div>}
+
+      {/* Input field to type a message */}
       <Input
         placeholder="Send Message to All"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
       />
-      <button onClick={handleSendMessage} className="mt-2 p-2 bg-blue-500 text-white rounded">
+
+      {/* Button to send the message */}
+      <button
+        onClick={handleSendMessage}
+        className="mt-2 p-2 bg-blue-500 text-white rounded"
+      >
         Send
       </button>
     </div>

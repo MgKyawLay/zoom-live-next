@@ -9,7 +9,7 @@ import ZoomVideo, {
 import { CameraButton, MicButton } from "./MuteButtons";
 import { PhoneOff } from "lucide-react";
 import { Button } from "./ui/button";
-import MessageBox from "./MessageBox"; 
+import MessageBox from "./MessageBox";
 
 const Videocall = (props: { slug: string; JWT: string }) => {
   const session = props.slug;
@@ -46,20 +46,21 @@ const Videocall = (props: { slug: string; JWT: string }) => {
   };
 
   const handleShare = async () => {
-    const stream = client.current.getMediaStream();
-    if (stream.isStartShareScreenWithVideoElement()) {
-      //@ts-ignore
-      await stream.startShareScreen(
-        // document.querySelector('#my-screen-share-content-video')
-      );
-      // screen share successfully started and rendered
-    } else {
-      //@ts-ignore
-      await stream.startShareScreen(
-        // document.querySelector('#my-screen-share-content-canvas')
-      );
-      // screen share successfully started and rendered
-    }
+    // const stream = client.current.getMediaStream();
+    // console.log("🚀 ~ handleShare ~ stream:", stream);
+    // if (stream.isStartShareScreenWithVideoElement()) {
+    //   //@ts-ignore
+    //   await stream.startShareScreen(
+    //     document.querySelector("#my-screen-share-content-video")
+    //   );
+    //   // screen share successfully started and rendered
+    // } else {
+    //   //@ts-ignore
+    //   await stream.startShareScreen(
+    //     document.querySelector("#my-screen-share-content-canvas")
+    //   );
+    //   // screen share successfully started and rendered
+    // }
   };
 
   const renderVideo = async (event: {
@@ -94,10 +95,7 @@ const Videocall = (props: { slug: string; JWT: string }) => {
 
   return (
     <div className="flex h-screen w-screen">
-        <MessageBox
-        client={client}
-        isInSession={inSession}
-        />
+      <MessageBox client={client} isInSession={inSession} />
       <div className="flex flex-col w-3/4 h-full">
         <h1 className="text-center text-3xl font-bold mb-4 mt-0">
           Parabyte Learning Media
@@ -112,7 +110,11 @@ const Videocall = (props: { slug: string; JWT: string }) => {
         {!inSession ? (
           <div className="mx-auto flex w-64 flex-col self-center">
             <div className="w-4" />
-            <Button className="flex flex-1" onClick={joinSession} title="join session">
+            <Button
+              className="flex flex-1"
+              onClick={joinSession}
+              title="join session"
+            >
               Join
             </Button>
           </div>
@@ -130,6 +132,10 @@ const Videocall = (props: { slug: string; JWT: string }) => {
                 client={client}
                 setIsAudioMuted={setIsAudioMuted}
               />
+
+              <Button onClick={handleShare}>
+                <div>share</div>
+              </Button>
               <Button onClick={leaveSession} title="leave session">
                 <PhoneOff />
               </Button>
