@@ -77,6 +77,7 @@ const MessageBox: React.FC<Props> = ({ isInSession, client }) => {
           messages.length > 0 ? (
             messages.map((msg) => (
               <MessageItem 
+              key={msg.id}
               sender={msg.sender}
               timestamp={msg.timestamp}
               body={msg.message}

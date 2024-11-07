@@ -26,8 +26,9 @@ const Videocall = (props: { slug: string; JWT: string }) => {
   const videoContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const stream = client.current.getMediaStream();
+
     client.current.on("passively-stop-share", (payload) => {
-      const stream = client.current.getMediaStream();
       stream.stopShareScreen().then(() => {
         setScreenShare(false);
       });
@@ -35,7 +36,6 @@ const Videocall = (props: { slug: string; JWT: string }) => {
 
     return () => {
       client.current.off("passively-stop-share", (payload) => {
-        const stream = client.current.getMediaStream();
         stream.stopShareScreen().then(() => {
           setScreenShare(false);
         });
@@ -129,7 +129,10 @@ const Videocall = (props: { slug: string; JWT: string }) => {
           style={inSession ? {} : { display: "none" }}
         >
           {/* @ts-expect-error html component */}
-          <video-player-container ref={videoContainerRef} style={!screenShare ? videoPlayerStyle : videoPlayerStyleWithShare} />
+          <video-player-container
+            ref={videoContainerRef}
+            style={!screenShare ? videoPlayerStyle : videoPlayerStyleWithShare}
+          />
           <video
             id="screenShareContainer"
             style={{
