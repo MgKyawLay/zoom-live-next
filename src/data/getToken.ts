@@ -7,14 +7,18 @@ export async function getData(slug: string) {
 }
 
 function generateSignature(sessionName: string, role: number) {
-  if (!process.env.ZOOM_SDK_KEY || !process.env.ZOOM_SDK_SECRET) {
-    throw new Error("Missing ZOOM_SDK_KEY or ZOOM_SDK_SECRET");
-  }
+  // if (!process.env.ZOOM_SDK_KEY || !process.env.ZOOM_SDK_SECRET) {
+  //   throw new Error("Missing ZOOM_SDK_KEY or ZOOM_SDK_SECRET");
+  // }
+  const ZOOM_SDK_KEY="tQDqZyYbEmUSwBjWhDulZdF61EoHQtorScON"
+  const ZOOM_SDK_SECRET="HSTErItmUonEDk35iqj9440wJ3EdVqb3mvSX"
   const iat = Math.round(new Date().getTime() / 1000) - 30;
   const exp = iat + 60 * 60 * 2;
   const oHeader = { alg: "HS256", typ: "JWT" };
-  const sdkKey = process.env.ZOOM_SDK_KEY;
-  const sdkSecret = process.env.ZOOM_SDK_SECRET;
+  // const sdkKey = process.env.ZOOM_SDK_KEY;
+  const sdkKey = ZOOM_SDK_KEY;
+  // const sdkSecret = process.env.ZOOM_SDK_SECRET;
+  const sdkSecret = ZOOM_SDK_SECRET;
   const oPayload = {
     app_key: sdkKey, tpc: sessionName, role_type: role, version: 1, iat: iat, exp: exp,
   };
