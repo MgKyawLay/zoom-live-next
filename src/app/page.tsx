@@ -21,7 +21,8 @@ export default function Home() {
       />
       <Button
         className="w-full max-w-xs mt-8"
-        disabled={!sessionName}
+        // disabled={!sessionName}
+        disabled={true}
         onClick={() => router.push(`/call/${sessionName}`)}
       >
         Create Session
