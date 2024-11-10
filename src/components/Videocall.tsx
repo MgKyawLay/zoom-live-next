@@ -12,9 +12,12 @@ import { PhoneOff } from "lucide-react";
 import { Button } from "./ui/button";
 import MessageBox from "./MessageBox";
 import { useRouter, useSearchParams } from "next/navigation";
+import Loading from "./loading/Loading";
+import LeaveWarningAlert from "./LeaveWarningAlert";
+import Image from "next/image";
 
 const Videocall = (props: { slug: string; JWT: string }) => {
-  // const route = useRouter();
+  const [loading, setLoading] = useState<boolean>(false);
   const searchParams = useSearchParams();
   const session = props.slug;
   let jwt = "";
@@ -22,13 +25,11 @@ const Videocall = (props: { slug: string; JWT: string }) => {
   if (token) {
     jwt = token.replace(/^"|"$/g, "");
   }
-  // const token = router.query.token as string;
-  // const jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhcHBfa2V5IjoiVnEzYjdsUmhSdDdsTklLYjF3NlB6R0hqRU1odm9hMFAzVWFxIiwidHBjIjoiTGl2ZVNlc3Npb24xMTYiLCJyb2xlX3R5cGUiOjEsInNlc3Npb25fa2V5IjoiTGl2ZVNlc3Npb24xMTY1Nzc1IiwidXNlcl9pZGVudGl0eSI6InRlc3QxIiwidmVyc2lvbiI6MSwiaWF0IjoxNzMwOTYxODM2LCJleHAiOjE3MzA5NjkwMzZ9.KO90h826nUIo8irMbcB5FTUApjV1zsOWgCwVQFkZ5qU";
   const [inSession, setInSession] = useState(false);
   const client = useRef<typeof VideoClient>(ZoomVideo.createClient());
   const [screenShare, setScreenShare] = useState<boolean>(false);
   const [participantCount, setParticipantCount] = useState(0);
-  console.log("🚀 ~ Videocall ~ participantCount:", participantCount)
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [isVideoMuted, setIsVideoMuted] = useState(
     !client.current.getCurrentUserInfo()?.bVideoOn
   );
@@ -50,8 +51,8 @@ const Videocall = (props: { slug: string; JWT: string }) => {
       });
     });
 
-    client.current.on("user-added", handleUserChange)
-    client.current.on("user-removed", handleUserChange)
+    client.current.on("user-added", handleUserChange);
+    client.current.on("user-removed", handleUserChange);
 
     return () => {
       client.current.off("passively-stop-share", (payload) => {
@@ -60,27 +61,25 @@ const Videocall = (props: { slug: string; JWT: string }) => {
         });
       });
 
-      client.current.off("user-added",handleUserChange)
-      client.current.off("user-removed", handleUserChange)
+      client.current.off("user-added", handleUserChange);
+      client.current.off("user-removed", handleUserChange);
     };
   }, [client]);
 
   const handleUserChange = () => {
     const participants = client.current.getAllUser();
-    console.log("🚀 ~ handleUserChange ~ participants:", participants)
-    setParticipantCount(participants.length)
-  }
+    setParticipantCount(participants.length);
+  };
 
   const joinSession = async () => {
+    setLoading(true);
     await client.current.init("en-US", "Global", { patchJsMedia: true });
     client.current.on(
       "peer-video-state-change",
       (payload) => void renderVideo(payload)
     );
-    await client.current.join(session, jwt, userName).catch((e) => {
-      console.log("live join excetpion", e);
-    });
-
+    await client.current.join(session, jwt, userName);
+    setLoading(false);
     setInSession(true);
     const mediaStream = client.current.getMediaStream();
     await mediaStream.startAudio();
@@ -137,24 +136,36 @@ const Videocall = (props: { slug: string; JWT: string }) => {
   };
 
   const leaveSession = async () => {
-    client.current.off(
-      "peer-video-state-change",
-      (payload: { action: "Start" | "Stop"; userId: number }) =>
-        void renderVideo(payload)
-    );
-    await client.current.leave().catch((e) => console.log("leave error", e));
-    // hard refresh to clear the state
-    window.location.href = "/";
+    setModalVisible(true);
+    // client.current.off(
+    //   "peer-video-state-change",
+    //   (payload: { action: "Start" | "Stop"; userId: number }) =>
+    //     void renderVideo(payload)
+    // );
+    // await client.current.leave().catch((e) => console.log("leave error", e));
+    // // hard refresh to clear the state
+    // window.location.href = "/";
   };
 
   return (
     <div className="flex h-screen w-screen">
       <MessageBox client={client} isInSession={inSession} />
       <div className="flex flex-col w-3/4 h-full">
-        <h1 className="text-center text-3xl font-bold mb-4 mt-0">
+        <h1 className="text-center text-3xl font-bold mt-0 flex flex-row justify-center items-center gap-10">
           Parabyte Learning Media
+          <Image src={"/parabyte2.jpg"} width={80} height={80} alt="Icon" />
         </h1>
-        <span className="absolute right-16 top-24 z-10 bg-black px-3 py-2 rounded-lg text-white">Views: {participantCount}</span>
+
+        {inSession && (
+          <span className="absolute right-16 top-24 z-10 bg-black px-3 py-2 rounded-lg text-white">
+            Views: {participantCount}
+          </span>
+        )}
+        {loading && (
+          <div className="absolute right-0 left-1/4 top-0 bottom-0 flex justify-center items-center z-10">
+            <Loading />
+          </div>
+        )}
         <div
           className="flex w-full flex-1"
           style={inSession ? {} : { display: "none" }}
@@ -164,6 +175,7 @@ const Videocall = (props: { slug: string; JWT: string }) => {
             ref={videoContainerRef}
             style={!screenShare ? videoPlayerStyle : videoPlayerStyleWithShare}
           />
+
           <video
             id="screenShareContainer"
             style={{
@@ -197,7 +209,23 @@ const Videocall = (props: { slug: string; JWT: string }) => {
                 client={client}
                 setIsAudioMuted={setIsAudioMuted}
               />
-
+              <LeaveWarningAlert
+                isVisible={modalVisible}
+                onCancleClick={() => setModalVisible(false)}
+                onYesClick={async () => {
+                  setModalVisible(false);
+                  client.current.off(
+                    "peer-video-state-change",
+                    (payload: { action: "Start" | "Stop"; userId: number }) =>
+                      void renderVideo(payload)
+                  );
+                  await client.current
+                    .leave()
+                    .catch((e) => console.log("leave error", e));
+                  // hard refresh to clear the state
+                  window.location.href = "/";
+                }}
+              />
               <Button onClick={handleShare}>
                 <div>{!screenShare ? "Share" : "Stop Share"}</div>
               </Button>
@@ -216,19 +244,24 @@ export default Videocall;
 
 const videoPlayerStyle = {
   height: "75vh",
-  marginTop: "1.5rem",
+  // marginTop: "1.5rem",
   marginLeft: "3rem",
   marginRight: "3rem",
   alignContent: "center",
   borderRadius: "10px",
   overflow: "hidden",
   backgroundColor: "skyblue",
+  // backgroundImage: "url('/parabyte1.jpg')",
+  backgroundSize: "cover",
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "center",
+  border: 1,
 } as CSSProperties;
 
 const videoPlayerStyleWithShare = {
   height: "20vh",
   width: "20vw",
-  marginTop: "1.5rem",
+  // marginTop: "1.5rem",
   marginLeft: "3rem",
   // marginRight: "3rem",
   alignContent: "center",
